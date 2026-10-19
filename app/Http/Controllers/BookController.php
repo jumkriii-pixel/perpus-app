@@ -11,15 +11,20 @@ class BookController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Mengambil seluruh data buku, diurutkan dari yang terbaru,
-        // dibagi per 10 data (paginasi).
-        $books = Book::latest()->paginate(10);
+        // Membaca kata kunci pencarian dari query string (?search=...)
+        $books = Book::when($request->search, function ($query, $search) {
+            $query->where('judul', 'like', "%{$search}%")
+                  ->orWhere('pengarang', 'like', "%{$search}%");
+        })
+        ->latest()
+        ->paginate(10)
+        ->withQueryString(); // Memastikan kata kunci pencarian tetap terbawa saat berpindah halaman paginasi
 
-        // Mengirim data buku ke halaman Vue Books/Index.
         return Inertia::render('Books/Index', [
-            'books' => $books,
+            'books'  => $books,
+            'search' => $request->search, // Dikirim balik ke Vue agar nilai input pencarian tetap tersimpan
         ]);
     }
 
@@ -28,7 +33,6 @@ class BookController extends Controller
      */
     public function create()
     {
-        // Mengarahkan ke halaman Vue Books/Create
         return Inertia::render('Books/Create');
     }
 
@@ -37,7 +41,7 @@ class BookController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi data dari form
+        // Validasi data input dari form tambah buku
         $validated = $request->validate([
             'kode_buku' => 'required|unique:books',
             'judul'     => 'required|max:255',
@@ -47,10 +51,10 @@ class BookController extends Controller
             'stok'      => 'required|integer|min:0',
         ]);
 
-        // 2. Simpan data buku ke database
+        // Simpan data buku baru ke database
         Book::create($validated);
 
-        // 3. Kembali ke halaman daftar buku
+        // Kembali ke halaman index dengan pesan sukses
         return redirect()->route('books.index')
             ->with('success', 'Buku berhasil ditambahkan');
     }
@@ -66,24 +70,46 @@ class BookController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Book $book)
     {
-        //
+        return Inertia::render('Books/Edit', [
+            'book' => $book,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Book $book)
     {
-        //
+        // Validasi data input dengan mengabaikan ID buku yang sedang diperbarui
+        $validated = $request->validate([
+            'kode_buku' => 'required|unique:books,kode_buku,' . $book->id,
+            'judul'     => 'required|max:255',
+            'pengarang' => 'required|max:255',
+            'penerbit'  => 'nullable|max:255',
+            'tahun'     => 'nullable|digits:4',
+            'stok'      => 'required|integer|min:0',
+        ]);
+
+        // Perbarui data buku di database
+        $book->update($validated);
+
+        // Kembali ke halaman index dengan pesan sukses
+        return redirect()->route('books.index')
+            ->with('success', 'Buku berhasil diperbarui');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Book $book)
     {
-        //
+        // Hapus data buku dari database
+        $book->delete();
+
+        // Kembali ke halaman index dengan pesan sukses
+        return redirect()->route('books.index')
+            ->with('success', 'Buku berhasil dihapus');
     }
 }

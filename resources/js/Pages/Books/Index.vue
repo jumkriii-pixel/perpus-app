@@ -4,6 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
+// Menerima data dari BookController
 const props = defineProps({
     books: Object,
     search: {
@@ -12,6 +13,7 @@ const props = defineProps({
     },
 });
 
+// Kata kunci pencarian
 const keyword = ref(props.search || '');
 
 // Fungsi pencarian buku
@@ -58,7 +60,15 @@ function hapus(id) {
                 {{ $page.props.flash.success }}
             </div>
 
-            <!-- Kotak Input Pencarian -->
+            <!-- Pesan error -->
+            <div
+                v-if="$page.props.flash?.error"
+                class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded"
+            >
+                {{ $page.props.flash.error }}
+            </div>
+
+            <!-- Kotak pencarian -->
             <div class="bg-white shadow-md rounded-lg p-5 mb-6">
                 <h2 class="text-lg font-semibold text-gray-700 mb-3">
                     Cari Data Buku
@@ -92,18 +102,33 @@ function hapus(id) {
                 </form>
             </div>
 
-            <!-- Tabel Buku -->
+            <!-- Tabel buku -->
             <div class="bg-white shadow-md rounded-lg overflow-x-auto">
                 <table class="min-w-full leading-normal">
+
                     <thead class="bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         <tr>
-                            <th class="px-5 py-3 border-b-2 border-gray-200">Kode</th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200">Judul</th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200">Pengarang</th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200">Penerbit</th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200">Tahun</th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200">Stok</th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200 text-center">Aksi</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200">
+                                Kode
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200">
+                                Judul
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200">
+                                Pengarang
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200">
+                                Penerbit
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200">
+                                Tahun
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200">
+                                Stok
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 text-center">
+                                Aksi
+                            </th>
                         </tr>
                     </thead>
 
@@ -138,6 +163,8 @@ function hapus(id) {
                             </td>
 
                             <td class="px-5 py-4 border-b border-gray-200 text-sm text-center whitespace-nowrap">
+
+                                <!-- Tombol Edit -->
                                 <Link
                                     :href="route('books.edit', book.id)"
                                     class="inline-block bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs font-semibold mr-1"
@@ -145,6 +172,7 @@ function hapus(id) {
                                     Edit
                                 </Link>
 
+                                <!-- Tombol Hapus -->
                                 <button
                                     @click="hapus(book.id)"
                                     type="button"
@@ -152,11 +180,18 @@ function hapus(id) {
                                 >
                                     Hapus
                                 </button>
+
                             </td>
                         </tr>
 
-                        <tr v-if="!props.books?.data || props.books.data.length === 0">
-                            <td colspan="7" class="px-5 py-5 text-center text-gray-500 text-sm">
+                        <!-- Jika data kosong -->
+                        <tr
+                            v-if="!props.books?.data || props.books.data.length === 0"
+                        >
+                            <td
+                                colspan="7"
+                                class="px-5 py-5 text-center text-gray-500 text-sm"
+                            >
                                 {{ keyword ? 'Buku tidak ditemukan.' : 'Belum ada data buku.' }}
                             </td>
                         </tr>
@@ -164,12 +199,41 @@ function hapus(id) {
                 </table>
             </div>
 
-            <!-- Informasi jumlah data -->
+            <!-- Informasi jumlah buku -->
             <div
                 v-if="props.books?.total !== undefined"
                 class="mt-4 text-sm text-gray-600"
             >
                 Total buku: {{ props.books.total }}
+            </div>
+
+            <!-- Navigasi halaman pagination -->
+            <div
+                v-if="props.books?.links"
+                class="flex flex-wrap gap-2 mt-6"
+            >
+                <template
+                    v-for="(link, index) in props.books.links"
+                    :key="index"
+                >
+                    <Link
+                        v-if="link.url"
+                        :href="link.url"
+                        v-html="link.label"
+                        preserve-scroll
+                        class="px-3 py-2 border rounded text-sm"
+                        :class="{
+                            'bg-blue-600 text-white border-blue-600': link.active,
+                            'bg-white text-gray-700 hover:bg-gray-100': !link.active
+                        }"
+                    />
+
+                    <span
+                        v-else
+                        v-html="link.label"
+                        class="px-3 py-2 border rounded text-sm text-gray-400"
+                    />
+                </template>
             </div>
 
         </div>

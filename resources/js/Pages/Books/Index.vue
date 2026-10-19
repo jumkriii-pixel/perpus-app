@@ -26,6 +26,8 @@ defineProps({
                             <th class="border p-3">Kode</th>
                             <th class="border p-3">Judul</th>
                             <th class="border p-3">Pengarang</th>
+                            <!-- Kolom Baru: Tahun -->
+                            <th class="border p-3">Tahun</th>
                             <th class="border p-3">Stok</th>
                         </tr>
                     </thead>
@@ -38,11 +40,14 @@ defineProps({
                             <td class="border p-3">{{ book.kode_buku }}</td>
                             <td class="border p-3">{{ book.judul }}</td>
                             <td class="border p-3">{{ book.pengarang }}</td>
+                            <!-- Data Kolom Baru: Tahun -->
+                            <td class="border p-3">{{ book.tahun || '-' }}</td>
                             <td class="border p-3">{{ book.stok }}</td>
                         </tr>
 
                         <tr v-if="!books.data || books.data.length === 0">
-                            <td colspan="4" class="border p-3 text-center">
+                            <!-- colspan diubah menjadi 5 karena jumlah kolom tabel bertambah menjadi 5 -->
+                            <td colspan="5" class="border p-3 text-center">
                                 Belum ada data buku.
                             </td>
                         </tr>

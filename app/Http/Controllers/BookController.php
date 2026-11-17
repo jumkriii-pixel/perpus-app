@@ -9,27 +9,28 @@ use Inertia\Inertia;
 class BookController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar buku dan pencarian biasa.
      */
     public function index(Request $request)
     {
-        // Membaca kata kunci pencarian dari query string (?search=...)
         $books = Book::when($request->search, function ($query, $search) {
-            $query->where('judul', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
                   ->orWhere('pengarang', 'like', "%{$search}%");
+            });
         })
         ->latest()
         ->paginate(10)
-        ->withQueryString(); // Memastikan kata kunci pencarian tetap terbawa saat berpindah halaman paginasi
+        ->withQueryString();
 
         return Inertia::render('Books/Index', [
-            'books'  => $books,
-            'search' => $request->search, // Dikirim balik ke Vue agar nilai input pencarian tetap tersimpan
+            'books' => $books,
+            'search' => $request->search,
         ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Menampilkan form tambah buku.
      */
     public function create()
     {
@@ -37,38 +38,37 @@ class BookController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menyimpan buku baru.
      */
     public function store(Request $request)
     {
-        // Validasi data input dari form tambah buku
         $validated = $request->validate([
-            'kode_buku' => 'required|unique:books',
-            'judul'     => 'required|max:255',
+            'kode_buku' => 'required|unique:books,kode_buku',
+            'judul' => 'required|max:255',
             'pengarang' => 'required|max:255',
-            'penerbit'  => 'nullable|max:255',
-            'tahun'     => 'nullable|digits:4',
-            'stok'      => 'required|integer|min:0',
+            'penerbit' => 'nullable|max:255',
+            'tahun' => 'nullable|digits:4',
+            'stok' => 'required|integer|min:0',
         ]);
 
-        // Simpan data buku baru ke database
         Book::create($validated);
 
-        // Kembali ke halaman index dengan pesan sukses
         return redirect()->route('books.index')
             ->with('success', 'Buku berhasil ditambahkan');
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan detail buku.
      */
-    public function show(string $id)
+    public function show(Book $book)
     {
-        //
+        return Inertia::render('Books/Show', [
+            'book' => $book,
+        ]);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Menampilkan form edit buku.
      */
     public function edit(Book $book)
     {
@@ -78,37 +78,56 @@ class BookController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Endpoint JSON untuk live search menggunakan Axios.
+     */
+    public function search(Request $request)
+    {
+        $kataKunci = $request->query('q', '');
+
+        $books = Book::where(function ($query) use ($kataKunci) {
+            $query->where('judul', 'like', "%{$kataKunci}%")
+                  ->orWhere('pengarang', 'like', "%{$kataKunci}%");
+        })
+        ->latest()
+        ->limit(10)
+        ->get([
+            'id',
+            'kode_buku',
+            'judul',
+            'pengarang',
+            'stok'
+        ]);
+
+        return response()->json($books);
+    }
+
+    /**
+     * Memperbarui data buku.
      */
     public function update(Request $request, Book $book)
     {
-        // Validasi data input dengan mengabaikan ID buku yang sedang diperbarui
         $validated = $request->validate([
             'kode_buku' => 'required|unique:books,kode_buku,' . $book->id,
-            'judul'     => 'required|max:255',
+            'judul' => 'required|max:255',
             'pengarang' => 'required|max:255',
-            'penerbit'  => 'nullable|max:255',
-            'tahun'     => 'nullable|digits:4',
-            'stok'      => 'required|integer|min:0',
+            'penerbit' => 'nullable|max:255',
+            'tahun' => 'nullable|digits:4',
+            'stok' => 'required|integer|min:0',
         ]);
 
-        // Perbarui data buku di database
         $book->update($validated);
 
-        // Kembali ke halaman index dengan pesan sukses
         return redirect()->route('books.index')
             ->with('success', 'Buku berhasil diperbarui');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus data buku.
      */
     public function destroy(Book $book)
     {
-        // Hapus data buku dari database
         $book->delete();
 
-        // Kembali ke halaman index dengan pesan sukses
         return redirect()->route('books.index')
             ->with('success', 'Buku berhasil dihapus');
     }

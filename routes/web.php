@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\ProfileController;
@@ -9,7 +8,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Halaman Welcome
+// ========================================
+// HALAMAN WELCOME
+// ========================================
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -19,15 +20,37 @@ Route::get('/', function () {
     ]);
 });
 
-// Halaman Dashboard
+// ========================================
+// HALAMAN DASHBOARD
+// ========================================
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Route yang hanya bisa diakses setelah login
+// ========================================
+// ROUTE YANG MEMERLUKAN LOGIN
+// ========================================
 Route::middleware('auth')->group(function () {
 
-    // Profile
+    // AJAX LIVE SEARCH BUKU
+    Route::get('/books/search', [BookController::class, 'search'])
+        ->name('books.search');
+
+    // AJAX LIVE SEARCH ANGGOTA
+    Route::get('/members/search', [MemberController::class, 'search'])
+        ->name('members.search');
+
+    // AJAX CEK NIS/NIM REALTIME
+    Route::get('/members/cek-nis', [MemberController::class, 'cekNis'])
+        ->name('members.cek-nis');
+
+    // CRUD BUKU
+    Route::resource('books', BookController::class);
+
+    // CRUD ANGGOTA
+    Route::resource('members', MemberController::class);
+
+    // PROFILE
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 
@@ -36,17 +59,14 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
-
-    // CRUD Buku
-    Route::resource('books', BookController::class);
-
-    // CRUD Anggota
-    Route::resource('members', MemberController::class);
-
 });
 
-// Route Kontak
+// ========================================
+// HALAMAN KONTAK
+// ========================================
 Route::get('/kontak', [KontakController::class, 'index']);
 
-// Authentication
+// ========================================
+// AUTHENTICATION
+// ========================================
 require __DIR__.'/auth.php';

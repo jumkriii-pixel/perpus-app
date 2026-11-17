@@ -76,7 +76,7 @@ watch(keyword, (nilai) => {
         return;
     }
 
-    timer = setTimeout(ambilHasil, 300);
+    timer = setTimeout(ambilHasil, 800);
 });
 
 // Menghapus buku

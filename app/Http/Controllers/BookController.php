@@ -16,12 +16,13 @@ class BookController extends Controller
         $books = Book::when($request->search, function ($query, $search) {
             $query->where(function ($q) use ($search) {
                 $q->where('judul', 'like', "%{$search}%")
-                  ->orWhere('pengarang', 'like', "%{$search}%");
+                    ->orWhere('pengarang', 'like', "%{$search}%")
+                    ->orWhere('penerbit', 'like', "%{$search}%");
             });
         })
-        ->latest()
-        ->paginate(10)
-        ->withQueryString();
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Books/Index', [
             'books' => $books,
@@ -78,7 +79,7 @@ class BookController extends Controller
     }
 
     /**
-     * Endpoint JSON untuk live search menggunakan Axios.
+     * Endpoint JSON untuk live search.
      */
     public function search(Request $request)
     {
@@ -86,19 +87,35 @@ class BookController extends Controller
 
         $books = Book::where(function ($query) use ($kataKunci) {
             $query->where('judul', 'like', "%{$kataKunci}%")
-                  ->orWhere('pengarang', 'like', "%{$kataKunci}%");
+                ->orWhere('pengarang', 'like', "%{$kataKunci}%")
+                ->orWhere('penerbit', 'like', "%{$kataKunci}%");
         })
-        ->latest()
-        ->limit(10)
-        ->get([
-            'id',
-            'kode_buku',
-            'judul',
-            'pengarang',
-            'stok'
-        ]);
+            ->latest()
+            ->limit(10)
+            ->get([
+                'id',
+                'kode_buku',
+                'judul',
+                'pengarang',
+                'penerbit',
+                'stok',
+            ]);
 
         return response()->json($books);
+    }
+
+    /**
+     * Endpoint JSON untuk validasi realtime kode buku.
+     */
+    public function cekKode(Request $request)
+    {
+        $kode = trim((string) $request->query('kode', ''));
+
+        $sudahDipakai = Book::where('kode_buku', $kode)->exists();
+
+        return response()->json([
+            'tersedia' => $kode !== '' && !$sudahDipakai,
+        ]);
     }
 
     /**

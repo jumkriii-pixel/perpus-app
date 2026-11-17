@@ -8,9 +8,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// ========================================
 // HALAMAN WELCOME
-// ========================================
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -20,21 +18,21 @@ Route::get('/', function () {
     ]);
 });
 
-// ========================================
 // HALAMAN DASHBOARD
-// ========================================
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// ========================================
 // ROUTE YANG MEMERLUKAN LOGIN
-// ========================================
 Route::middleware('auth')->group(function () {
 
     // AJAX LIVE SEARCH BUKU
     Route::get('/books/search', [BookController::class, 'search'])
         ->name('books.search');
+
+    // AJAX CEK KODE BUKU REALTIME
+    Route::get('/books/cek-kode', [BookController::class, 'cekKode'])
+        ->name('books.cek-kode');
 
     // AJAX LIVE SEARCH ANGGOTA
     Route::get('/members/search', [MemberController::class, 'search'])
@@ -61,12 +59,8 @@ Route::middleware('auth')->group(function () {
         ->name('profile.destroy');
 });
 
-// ========================================
 // HALAMAN KONTAK
-// ========================================
 Route::get('/kontak', [KontakController::class, 'index']);
 
-// ========================================
 // AUTHENTICATION
-// ========================================
 require __DIR__.'/auth.php';

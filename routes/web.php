@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\DashboardController;       
 use App\Http\Controllers\KontakController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -25,9 +26,9 @@ Route::get('/', function () {
 // ==========================================
 // HALAMAN DASHBOARD
 // ==========================================
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 
 // ==========================================
@@ -70,10 +71,18 @@ Route::middleware('auth')->group(function () {
 
 
     // ======================================
-    // CRUD DATA PEMINJAMAN
+    // DATA PEMINJAMAN
     // ======================================
     Route::resource('loans', LoanController::class)
         ->only(['index', 'create', 'store']);
+
+    // ======================================
+    // PENGEMBALIAN BUKU
+    // ======================================
+    Route::patch('/loans/{loan}/kembalikan', [
+        LoanController::class,
+        'kembalikan'
+    ])->name('loans.kembalikan');
 
 
     // ======================================

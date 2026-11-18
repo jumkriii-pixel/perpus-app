@@ -47,7 +47,7 @@ class LoanController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi data peminjaman
+        // Validasi data peminjaman.
         $validated = $request->validate([
             'member_id' => 'required|exists:members,id',
             'book_id' => 'required|exists:books,id',
@@ -58,42 +58,107 @@ class LoanController extends Controller
             'book_id.exists' => 'Buku yang dipilih tidak ditemukan.',
         ]);
 
-        // Menghitung jumlah buku yang masih dipinjam anggota
-        $jumlahDipinjam = Loan::where('member_id', $validated['member_id'])
-            ->where('status', 'dipinjam')
-            ->count();
+        // Menyimpan peminjaman dan mengurangi stok.
+        DB::transaction(function () use ($validated) {
 
-        // Membatasi maksimal 3 buku yang sedang dipinjam
-        if ($jumlahDipinjam >= 3) {
-            return back()->withErrors([
-                'member_id' => 'Anggota ini sudah meminjam maksimal 3 buku. Kembalikan buku terlebih dahulu sebelum meminjam lagi.',
-            ]);
-        }
+            // Mengunci data buku agar stok tidak berubah
+            // secara bersamaan oleh transaksi lain.
+            $book = Book::whereKey($validated['book_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        // Memeriksa stok buku
-        $book = Book::findOrFail($validated['book_id']);
+            // Memeriksa stok buku.
+            if ($book->stok < 1) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'book_id' => 'Stok buku ini sudah habis. Pilih buku lain.',
+                ]);
+            }
 
-        if ($book->stok < 1) {
-            return back()->withErrors([
-                'book_id' => 'Stok buku ini sudah habis. Pilih buku lain.',
-            ]);
-        }
+            // Menghitung jumlah buku yang masih dipinjam anggota.
+            $jumlahDipinjam = Loan::where(
+                'member_id',
+                $validated['member_id']
+            )
+                ->where('status', 'dipinjam')
+                ->count();
 
-        // Menyimpan peminjaman dan mengurangi stok
-        DB::transaction(function () use ($validated, $book) {
+            // Maksimal 3 buku yang sedang dipinjam.
+            if ($jumlahDipinjam >= 3) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'member_id' => 'Anggota ini sudah meminjam maksimal 3 buku. Kembalikan buku terlebih dahulu sebelum meminjam lagi.',
+                ]);
+            }
+
+            // Membuat data peminjaman.
             Loan::create([
                 'member_id' => $validated['member_id'],
                 'book_id' => $validated['book_id'],
                 'tanggal_pinjam' => now()->toDateString(),
                 'tanggal_kembali_rencana' => now()->addDays(7)->toDateString(),
                 'status' => 'dipinjam',
+                'denda' => 0,
             ]);
 
+            // Mengurangi stok buku sebanyak 1.
             $book->decrement('stok');
         });
 
-        // Kembali ke halaman daftar peminjaman
         return redirect()->route('loans.index')
             ->with('success', 'Peminjaman berhasil disimpan. Stok buku berkurang 1.');
+    }
+
+    /**
+     * Memproses pengembalian buku dan menghitung denda.
+     */
+    public function kembalikan(Loan $loan)
+    {
+        // Memeriksa apakah buku sudah dikembalikan.
+        if ($loan->status === 'dikembalikan') {
+            return back()->withErrors([
+                'loan' => 'Buku ini sudah dikembalikan sebelumnya.',
+            ]);
+        }
+
+        // Menghitung keterlambatan sebelum tanggal kembali diisi.
+        $hariTerlambat = $loan->hari_terlambat;
+        $denda = $loan->perkiraan_denda;
+
+        // Memproses pengembalian dan penambahan stok.
+        DB::transaction(function () use ($loan, $denda) {
+
+            // Mengunci data peminjaman.
+            $loan = Loan::whereKey($loan->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Mencegah pengembalian ganda.
+            if ($loan->status === 'dikembalikan') {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'loan' => 'Buku ini sudah dikembalikan sebelumnya.',
+                ]);
+            }
+
+            // Mengubah status peminjaman.
+            $loan->update([
+                'status' => 'dikembalikan',
+                'tanggal_kembali' => today()->toDateString(),
+                'denda' => $denda,
+            ]);
+
+            // Menambahkan stok buku sebanyak 1.
+            Book::whereKey($loan->book_id)
+                ->increment('stok');
+        });
+
+        // Membuat pesan sukses.
+        $pesan = 'Buku berhasil dikembalikan. Stok buku bertambah 1.';
+
+        if ($denda > 0) {
+            $pesan .= ' Terlambat ' . $hariTerlambat .
+                ' hari, denda Rp' .
+                number_format($denda, 0, ',', '.') . '.';
+        }
+
+        return back()->with('success', $pesan);
     }
 }

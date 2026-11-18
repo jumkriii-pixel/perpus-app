@@ -28,7 +28,7 @@ function formatRupiah(angka) {
         <div class="p-4">
 
             <!-- KARTU STATISTIK -->
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
 
                 <!-- KARTU 1: JUMLAH BUKU -->
                 <div
@@ -103,13 +103,30 @@ function formatRupiah(angka) {
                     </div>
                 </div>
 
+                <!-- KARTU 5: PEMINJAMAN HARI INI -->
+                <div
+                    class="rounded-lg border-l-4 border-purple-500 bg-white p-5 shadow-sm"
+                >
+                    <div class="text-sm text-gray-500">
+                        Peminjaman Hari Ini
+                    </div>
+
+                    <div class="text-3xl font-bold text-gray-800">
+                        {{ statistik.peminjaman_hari_ini }}
+                    </div>
+
+                    <div class="text-xs text-gray-500">
+                        Jumlah peminjaman hari ini
+                    </div>
+                </div>
+
             </div>
 
             <!-- GRAFIK PEMINJAMAN -->
             <div class="mt-4 rounded-lg bg-white p-5 shadow-sm">
 
                 <h3 class="mb-3 font-semibold text-gray-800">
-                    Peminjaman 6 Bulan Terakhir
+                    Peminjaman 12 Bulan Terakhir
                 </h3>
 
                 <BarChart

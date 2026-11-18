@@ -12,7 +12,7 @@ class Loan extends Model
     use HasFactory;
 
     // Denda Rp1.000 untuk setiap hari keterlambatan.
-    public const DENDA_PER_HARI = 1000;
+    public const DENDA_PER_HARI = 2000;
 
     // Kolom yang boleh diisi.
     protected $fillable = [

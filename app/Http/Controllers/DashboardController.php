@@ -24,6 +24,12 @@ class DashboardController extends Controller
         // Menghitung jumlah anggota
         $totalAnggota = Member::count();
 
+        // Menghitung peminjaman yang dilakukan hari ini
+        $peminjamanHariIni = Loan::where(
+            'tanggal_pinjam',
+            today()->toDateString()
+        )->count();
+
         // Peminjaman yang belum dikembalikan
         $sedangDipinjam = Loan::where('status', 'dipinjam')->count();
 
@@ -40,7 +46,7 @@ class DashboardController extends Controller
         $totalDenda = (int) Loan::sum('denda');
 
 
-        // BAGIAN 2: DATA GRAFIK 6 BULAN TERAKHIR
+        // BAGIAN 2: DATA GRAFIK 12 BULAN TERAKHIR
 
         $namaBulan = [
             'Jan', 'Feb', 'Mar', 'Apr',
@@ -51,8 +57,8 @@ class DashboardController extends Controller
         $label = [];
         $jumlah = [];
 
-        // Mengambil data 6 bulan terakhir
-        for ($i = 5; $i >= 0; $i--) {
+        // Mengambil data 12 bulan terakhir
+        for ($i = 11; $i >= 0; $i--) {
 
             // Tanggal awal bulan
             $awal = today()->startOfMonth()->subMonths($i);
@@ -82,6 +88,7 @@ class DashboardController extends Controller
                 'sedang_dipinjam' => $sedangDipinjam,
                 'terlambat' => $terlambat,
                 'total_denda' => $totalDenda,
+                'peminjaman_hari_ini' => $peminjamanHariIni,
             ],
 
             'grafik' => [
